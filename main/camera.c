@@ -93,6 +93,10 @@ static void camera_tx(void *param)
     size_t udp_packet_max = 65536;
     senderinfo.sin_port = htons(55556);
 
+    uint32_t frame_count = 0;
+    uint32_t frame_size_sum = 0;
+    int64_t start = esp_timer_get_time();
+
     while (1)
     {
         camera_fb_t *fb = esp_camera_fb_get();
@@ -107,7 +111,7 @@ static void camera_tx(void *param)
         size_t total = fb->len;
         size_t send = 0;
 
-        ESP_LOGI(TAG, "send %d", total);
+        // ESP_LOGI(TAG, "send %d", total);
 
         for (; send < total;)
         {
@@ -135,6 +139,19 @@ static void camera_tx(void *param)
         }
 
         esp_camera_fb_return(fb);
+
+        frame_count++;
+        frame_size_sum += total;
+
+        int64_t end = esp_timer_get_time();
+        int64_t pasttime = end - start;
+        if (pasttime > 1000000) {
+            start = end;
+            float adj = 1000000.0 / (float)pasttime;
+            ESP_LOGI(TAG, "%.1f fps %.3f Mbps", frame_count * adj, (frame_size_sum * 8.0 * adj) / 1024.0 / 1024.0);
+            frame_count = 0;
+            frame_size_sum = 0;
+        }
     }
 }
 
