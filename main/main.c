@@ -37,7 +37,7 @@ static EventGroupHandle_t s_wifi_event_group;
 #define WIFI_CONNECTED_BIT BIT0
 #define WIFI_FAIL_BIT      BIT1
 
-static const char *TAG = "wifi station";
+static const char *TAG = "main";
 
 static int s_retry_num = 0;
 
@@ -135,6 +135,9 @@ void wifi_init_sta(void)
     vEventGroupDelete(s_wifi_event_group);
 }
 
+esp_err_t init_camera(void);
+void start_camera(void);
+
 void app_main(void)
 {
     //Initialize NVS
@@ -145,6 +148,12 @@ void app_main(void)
     }
     ESP_ERROR_CHECK(ret);
 
+    ESP_LOGI(TAG, "Init Camera");
+    init_camera();
+
     ESP_LOGI(TAG, "ESP_WIFI_MODE_STA");
     wifi_init_sta();
+
+    ESP_LOGI(TAG, "Start Camera");
+    start_camera();
 }
