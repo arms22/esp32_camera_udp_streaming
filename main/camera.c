@@ -60,11 +60,18 @@ esp_err_t init_camera(void)
     config.pin_pwdn = PWDN_GPIO_NUM;
     config.pin_reset = RESET_GPIO_NUM;
     config.xclk_freq_hz = 24000000;
+    // config.xclk_freq_hz = 36000000;
     config.pixel_format = PIXFORMAT_JPEG;
-    config.frame_size = FRAMESIZE_CIF;
+    // config.frame_size = FRAMESIZE_QVGA; // 320 * 240 / 5 = 15,360 < 32,768
+    config.frame_size = FRAMESIZE_CIF; // 400 * 296 / 5 = 23,680 < 32,768
+    // config.frame_size = FRAMESIZE_HVGA; // 480 * 320 / 5 = 30,720 < 32,768
     config.jpeg_quality = 10;
     config.fb_count = 2;
     config.fb_location = CAMERA_FB_IN_DRAM;
+    config.grab_mode = CAMERA_GRAB_WHEN_EMPTY;
+    // config.grab_mode = CAMERA_GRAB_LATEST;
+    config.fragment_mode = true;
+    config.zero_padding = true;
 
     // camera init
     esp_err_t err = esp_camera_init(&config);
@@ -78,9 +85,11 @@ esp_err_t init_camera(void)
 
     // drop down frame size for higher initial frame rate
     s->set_framesize(s, FRAMESIZE_CIF);
-
-    // CLK X2
-    // s->set_reg(s, 0x111, 0x80, 0x80);
+    // s->set_framesize(s, FRAMESIZE_QVGA);
+    // s->set_framesize(s, FRAMESIZE_VGA);
+    // s->set_framesize(s, FRAMESIZE_XGA);
+    // s->set_framesize(s, FRAMESIZE_HD);
+    // s->set_framesize(s, FRAMESIZE_SXGA);
 
     return ESP_OK;
 }
@@ -90,7 +99,7 @@ static struct sockaddr_in senderinfo;
 
 static void camera_tx(void *param)
 {
-    size_t udp_packet_max = 65536;
+    size_t packet_max = 32768;
     senderinfo.sin_port = htons(55556);
 
     uint32_t frame_count = 0;
@@ -103,7 +112,6 @@ static void camera_tx(void *param)
         if (!fb)
         {
             ESP_LOGE(TAG, "Camera capture failed");
-            esp_camera_fb_return(fb);
             continue;
         }
 
@@ -116,16 +124,17 @@ static void camera_tx(void *param)
         for (; send < total;)
         {
             size_t txlen = total - send;
-            if (txlen > udp_packet_max) {
-                txlen = udp_packet_max;
+            if (txlen > packet_max) {
+                txlen = packet_max;
             }
+
             int err = sendto(camera_sock, &buf[send], txlen, 0, (struct sockaddr *)&senderinfo, sizeof(senderinfo));
             if (err < 0)
             {
                 ESP_LOGE(TAG, "Error occurred during sending: errno %d", errno);
                 if (errno == ENOMEM)
                 {
-                    vTaskDelay(pdMS_TO_TICKS(2));
+                    vTaskDelay(pdMS_TO_TICKS(4));
                 }
                 else
                 {
@@ -148,10 +157,13 @@ static void camera_tx(void *param)
         if (pasttime > 1000000) {
             start = end;
             float adj = 1000000.0 / (float)pasttime;
-            ESP_LOGI(TAG, "%.1f fps %.3f Mbps", frame_count * adj, (frame_size_sum * 8.0 * adj) / 1024.0 / 1024.0);
+            float mbps = (frame_size_sum * 8.0 * adj) / 1024.0 / 1024.0;
+            ESP_LOGI(TAG, "%.1f fps %.3f Mbps", frame_count * adj, mbps);
             frame_count = 0;
             frame_size_sum = 0;
         }
+
+        vTaskDelay(pdMS_TO_TICKS(1));
     }
 }
 
