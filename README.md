@@ -1,6 +1,6 @@
-# esp32-camera low latency streaming with UDP
+# Low Latency Camera Streaming with UDP for ESP32-Camera
 
-OV2640搭載 Unit Cam Wi-Fi Camera向けのUDPを使った低遅延ストリーミングソフトウェアです。カメラから取得したデータを逐次を送信するため、PSRAMを持たないESP32でも高解像度（HD/XGA）の画像を高いフレームレート（30p/15p）で低遅延でストリーミング可能です。受信側はPython+OpenCVで書いてます。
+OV2640搭載 Unit Cam Wi-Fi Camera向けのUDPを使った低遅延ストリーミングソフトウェアです。カメラから取得したデータを逐次を送信するため、PSRAMを持たないESP32でも高解像度（SVGA/HD）の画像を高いフレームレート（30p/15p）で低遅延でストリーミング可能です。受信側はPython+OpenCVで書いてます。
 
 ## 使い方（送信：esp32_sender）
 
@@ -11,6 +11,7 @@ OV2640搭載 Unit Cam Wi-Fi Camera向けのUDPを使った低遅延ストリー�
 `Example Configuration`でSSIDとパスワードを設定してください。
 
 ```
+cd esp32_sender
 idf.py menuconfig
 ```
 
@@ -19,6 +20,7 @@ idf.py menuconfig
 ビルドしてフラッシュしてシリアル出力を確認する。
 
 ```
+cd esp32_sender
 idf.py -p PORT build flash monitor
 ```
 
