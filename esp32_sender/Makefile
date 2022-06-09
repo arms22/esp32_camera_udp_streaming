@@ -3,7 +3,7 @@
 # project subdirectory.
 #
 
-PROJECT_NAME := esp32_camera_udp
+PROJECT_NAME := esp32_camera_udp_sender
 
 include $(IDF_PATH)/make/project.mk
 
