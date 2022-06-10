@@ -71,7 +71,7 @@ esp_err_t init_camera(void)
     config.grab_mode = CAMERA_GRAB_WHEN_EMPTY;
     // config.grab_mode = CAMERA_GRAB_LATEST;
     config.fragment_mode = true;
-    config.zero_padding = true;
+    config.zero_padding = false;
 
     // camera init
     esp_err_t err = esp_camera_init(&config);
@@ -140,6 +140,10 @@ static void camera_tx(void *param)
                 {
                     send = total;
                 }
+            }
+            else if (err == 0)
+            {
+                vTaskDelay(pdMS_TO_TICKS(1));
             }
             else
             {
