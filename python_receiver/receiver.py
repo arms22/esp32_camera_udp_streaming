@@ -7,7 +7,7 @@ import queue
 import time
 import traceback
 
-frame_q = queue.Queue(maxsize=5)
+frame_q = queue.Queue()
 runing = True
 
 def udp_recv(listen_addr, target_addr):
@@ -75,27 +75,46 @@ def main(args):
         cv2.namedWindow(winname, cv2.WINDOW_NORMAL)
         cv2.setWindowProperty(winname, cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
 
+    writer = None
+    img = None
+    next_write = 0
     while(True):
 
         try:
-            while True:
-                byte_frame = frame_q.get(block=True, timeout=1)
-                if frame_q.empty():
-                    break
-                print(time.perf_counter(), 'Skip picture')
-            print(time.perf_counter(), 'Decode picture')
-            img = cv2.imdecode(np.frombuffer(byte_frame, dtype=np.uint8), 1)
+            if args.write:
+                if not frame_q.empty():
+                    img = None
+            else:
+                img = None
+            if img is None:
+                while True:
+                    byte_frame = frame_q.get(block=True, timeout=1)
+                    if frame_q.empty() or args.grab_all:
+                        break
+                    print(time.perf_counter(), 'Skip picture')
+                print(time.perf_counter(), 'Decode picture')
+                img = cv2.imdecode(np.frombuffer(byte_frame, dtype=np.uint8), 1)
 
-            # # rotate
-            # img = cv2.rotate(img, cv2.ROTATE_90_COUNTERCLOCKWISE)
+                # rotate
+                # img = cv2.rotate(img, cv2.ROTATE_90_COUNTERCLOCKWISE)
+                # img = cv2.rotate(img, cv2.ROTATE_90_CLOCKWISE)
 
-            # # resize
-            # width = 800
-            # h, w = img.shape[:2]
-            # if w < width:
-            #     print(time.perf_counter(), 'Resize picture')
-            #     height = round(h * (width / w))
-            #     img = cv2.resize(img, dsize=(width, height))
+                # resize
+                # width = 800
+                # h, w = img.shape[:2]
+                # if w < width:
+                #     print(time.perf_counter(), 'Resize picture')
+                #     height = round(h * (width / w))
+                #     img = cv2.resize(img, dsize=(width, height))
+
+            if args.write:
+                if writer is None:
+                    fourcc = cv2.VideoWriter_fourcc('m', 'p', '4', 'v')
+                    writer = cv2.VideoWriter(args.write, fourcc, args.fps, (img.shape[1], img.shape[0]))
+                if time.perf_counter() > next_write:
+                    next_write += 1/args.fps
+                    print(time.perf_counter(), 'Write picture')
+                    writer.write(img)
 
             print(time.perf_counter(), 'Show picture')
             cv2.imshow(winname,img)
@@ -103,13 +122,14 @@ def main(args):
                 break
         except queue.Empty as e:
             pass
-            # print('frame_q.get Empty')
         except Exception as e:
             print(traceback.format_exc())
         except KeyboardInterrupt as e:
             print('KeyboardInterrupt')
             break
 
+    if writer:
+        writer.release()
     print('Waiting for recv thread to end')
     runing = False
     thread.join()
@@ -121,5 +141,8 @@ if __name__ == "__main__":
     parser.add_argument("listen", type=str)
     parser.add_argument("target", type=str)
     parser.add_argument("--fullscreen", action='store_true')
+    parser.add_argument("--write", type=str)
+    parser.add_argument("--fps", type=int, default=60)
+    parser.add_argument("--grab-all", action='store_true', default=False)
     args = parser.parse_args()
     main(args)
