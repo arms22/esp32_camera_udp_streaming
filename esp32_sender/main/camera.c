@@ -1,5 +1,6 @@
 #include <esp_log.h>
 #include <esp_system.h>
+#include <esp_timer.h>
 #include <nvs_flash.h>
 #include <sys/param.h>
 #include <string.h>
@@ -248,7 +249,7 @@ void start_camera(void)
                 if (data[0] == 0x55)
                 {
                     peer_addr = *netbuf_fromaddr(rxbuf);
-                    ESP_LOGI(TAG, "peer %x", peer_addr.u_addr.ip4.addr);
+                    ESP_LOGI(TAG, "peer %lx", peer_addr.u_addr.ip4.addr);
 
                     ESP_LOGI(TAG, "Trigged!");
                     netbuf_delete(rxbuf);
