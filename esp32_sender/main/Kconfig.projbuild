@@ -1,5 +1,17 @@
 menu "Example Configuration"
 
+    config M5STACK_UNITCAM
+        bool "M5Stack UnitCam"
+        default n
+
+    config M5STACK_UNITCAM_S3
+        bool "M5Stack UnitCam S3"
+        default y
+
+    config XIAO_ESP32S3_SENSE
+        bool "Xiao ESP32S3 Sense"
+        default n
+
     config ESP_WIFI_SSID
         string "WiFi SSID"
         default "myssid"
